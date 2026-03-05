@@ -26,51 +26,37 @@ func NewAuthService(userRepo *repository.UserRepository, jwtManager *jwt.JWTMana
 	}
 }
 
-// register
 func (s *AuthService) Register(ctx context.Context, req *models.RegisterRequest) (*models.AuthResponse, error) {
-
-	// check if user already exists
 	existingUser, err := s.userRepo.FindUserByEmail(ctx, req.Email)
 	if err == nil && existingUser != nil {
 		return nil, errors.New("email already in use")
 	}
 
 	if len(req.Password) < 8 {
-		return nil, errors.New("Password must be at least 8 characters")
+		return nil, errors.New("password must be at least 8 characters")
 	}
 
-	// hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, errors.New("failed to process password")
 	}
 
-	// build user
 	user := &models.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashedPassword),
 	}
 
-	// save user
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
 
-	// generate tokens
 	tokenPair, err := s.jwtManager.GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
 	}
 
-	// save refresh token
-	refreshToken := &models.RefreshToken{
-		UserID:    user.ID,
-		Token:     tokenPair.RefreshToken,
-		ExpiresAt: time.Now().Add(s.refreshExpiry),
-	}
-
-	if err := s.userRepo.SaveRefreshToken(ctx, refreshToken); err != nil {
+	if err := s.saveRefreshToken(ctx, user.ID, tokenPair.RefreshToken); err != nil {
 		return nil, err
 	}
 
@@ -78,60 +64,43 @@ func (s *AuthService) Register(ctx context.Context, req *models.RegisterRequest)
 }
 
 func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest) (*models.AuthResponse, error) {
-
-	// find user by email
 	user, err := s.userRepo.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// compare password with hash
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// generate token pair
 	tokenPair, err := s.jwtManager.GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
 	}
 
-	// save refresh token
-	refreshToken := &models.RefreshToken{
-		UserID:    user.ID,
-		Token:     tokenPair.RefreshToken,
-		ExpiresAt: time.Now().Add(s.refreshExpiry),
-	}
-
-	err = s.userRepo.SaveRefreshToken(ctx, refreshToken)
-	if err != nil {
+	if err := s.saveRefreshToken(ctx, user.ID, tokenPair.RefreshToken); err != nil {
 		return nil, err
 	}
 
-	// return response
 	return buildAuthResponse(tokenPair, user), nil
 }
 
-// refresh
-
 func (s *AuthService) Refresh(ctx context.Context, req *models.RefreshRequest) (*models.AuthResponse, error) {
-	// 1. validate refresh token signature + expiry
-	claims, err := s.jwtManager.ValidateRefreshToken(req.RefreshToken) // ← fix 1
-
+	// 1. validate JWT signature + expiry
+	claims, err := s.jwtManager.ValidateRefreshToken(req.RefreshToken) // ✅ uppercase V
 	if err != nil {
 		return nil, errors.New("invalid or expired refresh token")
 	}
 
 	// 2. check token exists in MongoDB
-	storedToken, err := s.userRepo.FindRefreshToken(ctx, req.RefreshToken) // ← fix 2
+	storedToken, err := s.userRepo.FindRefreshToken(ctx, req.RefreshToken)
 	if err != nil {
 		return nil, errors.New("refresh token not found, please login again")
 	}
 
 	// 3. check not expired in DB
 	if time.Now().After(storedToken.ExpiresAt) {
-		_ = s.userRepo.DeleteRefreshToken(ctx, req.RefreshToken) // ← fix 3
+		_ = s.userRepo.DeleteRefreshToken(ctx, req.RefreshToken)
 		return nil, errors.New("refresh token expired, please login again")
 	}
 
@@ -141,12 +110,12 @@ func (s *AuthService) Refresh(ctx context.Context, req *models.RefreshRequest) (
 		return nil, errors.New("invalid token claims")
 	}
 
-	user, err := s.userRepo.FindUserByID(ctx, userID)
+	user, err := s.userRepo.FindUserById(ctx, userID)
 	if err != nil {
 		return nil, errors.New("user no longer exists")
 	}
 
-	// 5. delete old refresh token
+	// 5. delete old refresh token (rotation)
 	_ = s.userRepo.DeleteRefreshToken(ctx, req.RefreshToken)
 
 	// 6. generate new token pair
@@ -162,20 +131,17 @@ func (s *AuthService) Refresh(ctx context.Context, req *models.RefreshRequest) (
 
 	return buildAuthResponse(tokenPair, user), nil
 }
+
 func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
-	// just delete the refresh token from MongoDB
-	// access token expires naturally after 15 min
 	return s.userRepo.DeleteRefreshToken(ctx, refreshToken)
 }
 
 func (s *AuthService) LogoutAll(ctx context.Context, userID primitive.ObjectID) error {
-	// delete ALL refresh tokens for this user
-	// useful for "logout from all devices"
 	return s.userRepo.DeleteAllUserTokens(ctx, userID)
 }
 
 func (s *AuthService) GetMe(ctx context.Context, userID primitive.ObjectID) (*models.UserResponse, error) {
-	user, err := s.userRepo.FindUserByID(ctx, userID)
+	user, err := s.userRepo.FindUserById(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +153,10 @@ func (s *AuthService) GetMe(ctx context.Context, userID primitive.ObjectID) (*mo
 		CreatedAt: user.CreatedAt,
 	}, nil
 }
+
+// ─────────────────────────────────────────
+// PRIVATE HELPERS
+// ─────────────────────────────────────────
 
 func (s *AuthService) saveRefreshToken(ctx context.Context, userID primitive.ObjectID, tokenString string) error {
 	refreshToken := &models.RefreshToken{

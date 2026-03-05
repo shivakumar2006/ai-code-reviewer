@@ -28,7 +28,7 @@ func NewUserRepository(database *db.Database) *UserRepository {
 // create user
 func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) error {
 	user.ID = primitive.NewObjectID()
-	user.CreateAt = time.Now()
+	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
 	_, err := r.userCol.InsertOne(ctx, user)
@@ -109,7 +109,7 @@ func (r *UserRepository) DeleteRefreshToken(ctx context.Context, tokenString str
 	return nil
 }
 
-func (r *UserRepository) DeleteAllUserToken(ctx context.Context, userID primitive.ObjectID) error {
+func (r *UserRepository) DeleteAllUserTokens(ctx context.Context, userID primitive.ObjectID) error {
 	filter := bson.M{"user_id": userID}
 	_, err := r.tokenCol.DeleteMany(ctx, filter)
 	if err != nil {

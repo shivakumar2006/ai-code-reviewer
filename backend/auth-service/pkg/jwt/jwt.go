@@ -82,7 +82,7 @@ func (j *JWTManager) ValidateAccessToken(tokenString string) (*Claims, error) {
 	return j.validateToken(tokenString, j.accessSecret, AccessToken)
 }
 
-func (j *JWTManager) validateRefreshToken(tokenString string) (*Claims, error) {
+func (j *JWTManager) ValidateRefreshToken(tokenString string) (*Claims, error) {
 	return j.validateToken(tokenString, j.refreshSecret, RefreshToken)
 }
 

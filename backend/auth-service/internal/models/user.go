@@ -24,18 +24,18 @@ type RefreshToken struct {
 }
 
 type RegisterRequest struct {
-	Name     string `json:"name"     binding:"required,min=2,max=50"`
-	Email    string `json:"email"    binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"    binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"` // ← fix 1
+	RefreshToken string `json:"refresh_token"` // ← fix 1
 }
 
 type AuthResponse struct {
