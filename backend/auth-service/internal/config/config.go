@@ -9,13 +9,13 @@ import (
 )
 
 type Config struct {
-	Port                string
-	MongoURI            string
-	MongoDB             string
-	JWTAccessSecret     string
-	JWTRefreshSecret    string
-	AccessTokenExpiry   time.Duration
-	AccessRefreshExpiry time.Duration
+	Port               string
+	MongoURI           string
+	MongoDB            string
+	JWTAccessSecret    string
+	JWTRefreshSecret   string
+	AccessTokenExpiry  time.Duration
+	RefreshTokenExpiry time.Duration
 }
 
 func Load() *Config {
@@ -35,13 +35,13 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:                getEnv("PORT", "8080"),
-		MongoURI:            getEnv("MONGO_URI", "mongodb://localhost:27017"),
-		MongoDB:             getEnv("MONGO_DB", "ai_code_reviewer"),
-		JWTAccessSecret:     getEnv("JWT_ACCESS_SECRET", "15m"),
-		JWTRefreshSecret:    getEnv("JWT_REFRESH_SECRET", "168h"),
-		AccessTokenExpiry:   accessExpiry,
-		AccessRefreshExpiry: refreshExpiry,
+		Port:               getEnv("PORT", "8080"),
+		MongoURI:           getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		MongoDB:            getEnv("MONGO_DB", "ai_code_reviewer"),
+		JWTAccessSecret:    getEnv("JWT_ACCESS_SECRET", "15m"),
+		JWTRefreshSecret:   getEnv("JWT_REFRESH_SECRET", "168h"),
+		AccessTokenExpiry:  accessExpiry,
+		RefreshTokenExpiry: refreshExpiry,
 	}
 }
 

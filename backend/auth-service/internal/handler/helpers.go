@@ -25,6 +25,19 @@ func validateRegisterRequest(req *models.RegisterRequest) error {
 	return nil
 }
 
+func validateLoginRequest(req *models.LoginRequest) error {
+	if strings.TrimSpace(req.Email) == "" {
+		return errors.New("email is required")
+	}
+	if !strings.Contains(req.Email, "@") {
+		return errors.New("invalid email format")
+	}
+	if strings.TrimSpace(req.Password) == "" {
+		return errors.New("password is required")
+	}
+	return nil
+}
+
 // writeJSON writes a JSON response with the given status code and payload.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

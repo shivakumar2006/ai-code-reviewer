@@ -1,0 +1,38 @@
+# stage 1 
+FROM golang:1.23-alpine AS builder 
+
+RUN apk add --no-cache git 
+
+WORKDIR /app 
+
+COPY go.mod go.sum /
+
+RUN go mod download 
+
+COPY . . 
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o app ./cmd/main.go
+
+
+# stage 2 
+FROM alpine:3.19
+
+#add ca-certificates for HTTPS call (needed for mongodb atlas etc)
+RUN apk add --no-cache ca-certificates tzdata
+
+# create a non root user - never run container as a root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app 
+
+# copy onlyt the compiled binary from the builder stage
+COPY --from=builder /app/app .
+
+RUN chown appuser:appgroup /app/app
+
+# switch to appuser 
+USER appuser 
+
+EXPOSE 8080 
+
+CMD ["./app"]

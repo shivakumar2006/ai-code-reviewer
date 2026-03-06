@@ -1,0 +1,14 @@
+.git
+.gitignore
+
+# env files — never bake secrets into image
+.env
+*.env
+
+# Go build cache
+*.exe
+*.test
+
+# docs
+README.md
+*.md
