@@ -29,6 +29,7 @@ func NewAuthMiddleware(jwtSecret string) *AuthMiddleware {
 type Claims struct {
 	UserID    string `json:"user_id"`
 	UserEmail string `json:"user_email"`
+	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
@@ -77,7 +78,40 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 // helpers function
 
 func parseToken(tokenString, secret string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
+			return []byte(secret), nil
+		})
+	if err != nil {
+		return nil, err
+	}
 
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return nil, jwt.ErrSignatureInvalid
+	}
+	return claims, nil
+}
+
+func GetUserID(r *http.Request) (string, bool) {
+	value := r.Context().Value(UserIDKey)
+	if value == nil {
+		return "", false
+	}
+	userID, ok := value.(string)
+	return userID, ok
+}
+
+func GetUserEmail(r *http.Request) (string, bool) {
+	value := r.Context().Value(UserEmailIDKey)
+	if value == nil {
+		return "", false
+	}
+	email, ok := value.(string)
+	return email, ok
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {
