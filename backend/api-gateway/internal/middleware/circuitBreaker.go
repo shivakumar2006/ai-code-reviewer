@@ -62,42 +62,44 @@ func (cb *CircuitBreaker) getBreaker(serviceName string, cfg CircuitBreakerConfi
 	return breaker
 }
 
-func (cb *CircuitBreaker) Protect(serviceName string, cfg CircuitBreakerConfig, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		breaker := cb.getBreaker(serviceName, cfg)
+func (cb *CircuitBreaker) Protect(serviceName string, cfg CircuitBreakerConfig) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			breaker := cb.getBreaker(serviceName, cfg)
 
-		// execute request through the circuit breaker
-		_, err := breaker.Execute(func() (interface{}, error) {
-			// wrap the next handler in response recorder
-			// so we can detect if it fail
-			recorder := newResponseRecorder(w)
-			next.ServeHTTP(recorder, r)
+			// execute request through the circuit breaker
+			_, err := breaker.Execute(func() (interface{}, error) {
+				// wrap the next handler in response recorder
+				// so we can detect if it fail
+				recorder := newResponseRecorder(w)
+				next.ServeHTTP(recorder, r)
 
-			// if downstream returned as 500 treat it as failure
-			if recorder.statusCode >= 500 {
-				return nil, errServiceUnavailable
+				// if downstream returned as 500 treat it as failure
+				if recorder.statusCode >= 500 {
+					return nil, errServiceUnavailable
+				}
+
+				// write the recorded response to the real writer
+				recorder.flush()
+				return nil, nil
+			})
+
+			if err != nil {
+				if err == gobreaker.ErrOpenState {
+					writeCBError(w, serviceName, "circuit open")
+					return
+				}
+
+				if err == gobreaker.ErrTooManyRequests {
+					writeCBError(w, serviceName, "too many requests at half open state")
+					return
+				}
+
+				//service returned 5xx or execution failed
+				writeCBError(w, serviceName, "service unavailable")
 			}
-
-			// write the recorded response to the real writer
-			recorder.flush()
-			return nil, nil
 		})
-
-		if err != nil {
-			if err == gobreaker.ErrOpenState {
-				writeCBError(w, serviceName, "circuit open")
-				return
-			}
-		}
-
-		if err == gobreaker.ErrTooManyRequests {
-			writeCBError(w, serviceName, "too many requests at half open state")
-			return
-		}
-
-		//service returned 5xx
-		writeCBError(w, serviceName, "service unavailable")
-	})
+	}
 }
 
 type responseRecorder struct {

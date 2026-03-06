@@ -14,20 +14,21 @@ import (
 func Setup(cfg *config.Config, sp *proxy.ServiceProxy) http.Handler {
 	r := chi.NewRouter()
 
-	// global middleware
+	// ─────────────────────────────────────────
+	// global middleware — must be before routes
+	// ─────────────────────────────────────────
 	r.Use(chimiddleware.Logger)
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.RealIP)
 
-	// CORS
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
-		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodOptions, http.MethodDelete},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "application/json"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID"},
 		ExposedHeaders:   []string{"Authorization"},
 		AllowCredentials: true,
-		MaxAge:           30,
+		MaxAge:           300,
 	}))
 
 	// initialize middleware
@@ -39,73 +40,78 @@ func Setup(cfg *config.Config, sp *proxy.ServiceProxy) http.Handler {
 		Timeout:     cfg.CBTimeout,
 	})
 
-	// rate limit applies to every route
+	// rate limit on every route
 	r.Use(rateLimiter.Limit)
 
+	// ─────────────────────────────────────────
 	// health check
+	// ─────────────────────────────────────────
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok", "service": "api-gateway"}`))
+		w.Write([]byte(`{"status":"ok","service":"api-gateway"}`))
 	})
 
-	// auth route public
-	// no auth middleware but cb is on
-	r.Route("/auth", func(chi.Router) {
-		r.Use(func(next http.Handler) http.Handler {
-			return cb.Protect("auth-service", middleware.CircuitBreakerConfig{
+	// ─────────────────────────────────────────
+	// auth routes
+	// ─────────────────────────────────────────
+	r.Route("/auth", func(r chi.Router) {
+		// public routes
+		r.With(cb.Protect("auth-service", middleware.CircuitBreakerConfig{
+			MaxRequests: cfg.CBMaxRequests,
+			Interval:    cfg.CBInterval,
+			Timeout:     cfg.CBTimeout,
+		})).Group(func(r chi.Router) {
+			r.Post("/register", sp.AuthProxy)
+			r.Post("/login", sp.AuthProxy)
+			r.Post("/refresh", sp.AuthProxy)
+			r.Post("/logout", sp.AuthProxy)
+		})
+
+		// protected routes
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+			r.Use(cb.Protect("auth-service", middleware.CircuitBreakerConfig{
 				MaxRequests: cfg.CBMaxRequests,
 				Interval:    cfg.CBInterval,
 				Timeout:     cfg.CBTimeout,
-			}, next)
-		})
-
-		r.Post("/register", sp.AuthProxy)
-		r.Post("/login", sp.AuthProxy)
-		r.Post("/refresh", sp.AuthProxy)
-		r.Post("/logout", sp.AuthProxy)
-
-		// protected auth routes
-		r.Group(func(r chi.Router) {
-			r.Use(authMiddleware.Authenticate)
+			}))
 			r.Get("/me", sp.AuthProxy)
 			r.Post("/logout-all", sp.AuthProxy)
 		})
 	})
 
-	// review route - protected
-	// auth middleware + cb on
-	r.Route("/review", func(r chi.Router) {
-		//all review routes require authentication
+	// ─────────────────────────────────────────
+	// review routes
+	// ─────────────────────────────────────────
+	r.Route("/reviews", func(r chi.Router) {
+		// all review routes require authentication and circuit breaker
 		r.Use(authMiddleware.Authenticate)
-		r.Use(func(next http.Handler) http.Handler {
-			return cb.Protect("review-service", middleware.CircuitBreakerConfig{
-				MaxRequests: cfg.CBMaxRequests,
-				Interval:    cfg.CBInterval,
-				Timeout:     cfg.CBTimeout,
-			}, next)
-		})
+		r.Use(cb.Protect("review-service", middleware.CircuitBreakerConfig{
+			MaxRequests: cfg.CBMaxRequests,
+			Interval:    cfg.CBInterval,
+			Timeout:     cfg.CBTimeout,
+		}))
 
 		r.Post("/", sp.ReviewProxy)
-		r.Get("/", sp.ReviewProxy) // get all reviews
-		r.Post("/{id}", sp.ReviewProxy)
+		r.Get("/", sp.ReviewProxy)
+		r.Get("/{id}", sp.ReviewProxy)
 		r.Delete("/{id}", sp.ReviewProxy)
 	})
 
-	// llm routes - protected
-	// authmiddleware + cb on
-	// llm get longer timeout
+	// ─────────────────────────────────────────
+	// llm routes
+	// ─────────────────────────────────────────
 	r.Route("/llm", func(r chi.Router) {
 		r.Use(authMiddleware.Authenticate)
-		r.Use(func(next http.Handler) http.Handler {
-			return cb.Protect("llm-service", middleware.CircuitBreakerConfig{
-				MaxRequests: cfg.CBMaxRequests,
-				Interval:    cfg.CBInterval,
-				Timeout:     cfg.CBTimeout,
-			}, next)
-		})
+		r.Use(cb.Protect("llm-service", middleware.CircuitBreakerConfig{
+			MaxRequests: cfg.CBMaxRequests,
+			Interval:    cfg.CBInterval,
+			Timeout:     cfg.CBTimeout * 3,
+		}))
 
-		r.Post("/review", sp.LLMProxy) // send code for review
+		r.Post("/review", sp.LLMProxy)
 	})
+
 	return r
 }

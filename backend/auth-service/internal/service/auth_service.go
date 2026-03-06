@@ -179,3 +179,4 @@ func buildAuthResponse(tokenPair *jwt.TokenPair, user *models.User) *models.Auth
 		},
 	}
 }
+
