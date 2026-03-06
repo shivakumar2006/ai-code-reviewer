@@ -36,6 +36,15 @@ func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
 		// use userID if authenticated, otherwise use IP
 		key := rl.getClientKey(r)
 
+		// check if the rate limit is exceeded
+		if !rl.isAllowed(key) {
+			w.Header().Set("X-RateLimit-Limit", string(rune(rl.limit)))
+			w.Header().Set("Retry-After", rl.window.String())
+			writeError(w, http.StatusTooManyRequests, "rate limit exceeded, please slow down")
+		}
+
+		// forward to next handler
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -50,7 +59,42 @@ func (rl *RateLimiter) getClientKey(r *http.Request) string {
 	}
 
 	// fallback to IP
+	ip := r.Header.Get("X-Real-IP")
+	if ip == "" {
+		ip = r.Header.Get("X-Forwarded-For")
+	}
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
 
+	return "ip: " + ip
+}
+
+func (rl *RateLimiter) isAllowed(key string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	c, exists := rl.clients[key]
+
+	if !exists {
+		// first requests from clients
+		rl.clients[key] = &client{
+			count:    1,
+			lastSeen: now,
+		}
+		return true
+	}
+
+	// check if the window has reset
+	if c.count >= rl.limit {
+		return false // means rate limit exceed
+	}
+
+	// increment count
+	c.count++
+	c.lastSeen = now
+	return true
 }
 
 func (rl *RateLimiter) cleanupLoop() {
