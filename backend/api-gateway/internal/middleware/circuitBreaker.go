@@ -31,7 +31,7 @@ func (cb *CircuitBreaker) getBreaker(serviceName string, cfg CircuitBreakerConfi
 	}
 
 	// create a new cb
-	settings := gobreaker.settings{
+	settings := gobreaker.Settings{
 		Name: serviceName,
 
 		// max requests allow at half open state
@@ -50,7 +50,7 @@ func (cb *CircuitBreaker) getBreaker(serviceName string, cfg CircuitBreakerConfi
 		},
 
 		// called every time state changed
-		OnStateChange: func(name string, from gobreaker.state, to gobreaker.state) {
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
 			fromStr := stateToString(from)
 			toStr := stateToString(to)
 			println("Circuit breaker [" + name + "] " + fromStr + " -> " + toStr)
