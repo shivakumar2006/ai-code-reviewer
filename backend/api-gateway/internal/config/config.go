@@ -30,7 +30,7 @@ func Load() *Config {
 	}
 	rateLimitRequests, err := strconv.Atoi(getEnv("RATE_LIMIT_REQUESTS", "100"))
 	if err != nil {
-		log.Fatal("invalid RATE_LIMIT_REQUESTS")
+		log.Fatalf("invalid RATE_LIMIT_REQUESTS %s", err)
 	}
 	rateLimitWindow, err := time.ParseDuration(getEnv("RATE_LIMIT_WINDOW", "1m"))
 	if err != nil {
@@ -54,7 +54,7 @@ func Load() *Config {
 		AuthServiceURL:    getEnv("AUTH_SERVICE_URL", "http://localhost:8080"),
 		ReviewServiceURL:  getEnv("REVIEW_SERVICE_URL", "http://localhost:8081"),
 		LLMServiceURL:     getEnv("LLM_SERVICE_URL", "http://localhost:8082"),
-		JWTAccessSecret:   getEnv("JWT_ACCESS_SECRET", "super_secret_access_key"),
+		JWTAccessSecret:   mustEnv("JWT_ACCESS_SECRET"),
 		RateLimitRequests: rateLimitRequests,
 		RateLimitWindow:   rateLimitWindow,
 		CBMaxRequests:     uint32(cbMaxRequests),
@@ -68,4 +68,12 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func mustEnv(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("missing required .env variables: %s", key)
+	}
+	return value
 }
