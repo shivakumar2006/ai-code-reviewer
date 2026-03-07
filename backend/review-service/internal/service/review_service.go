@@ -27,7 +27,7 @@ func NewReviewRepository(repo *repository.ReviewRepository, llmClient *llmclient
 // create review
 func (s *ReviewService) CreateReview(ctx context.Context, userID primitive.ObjectID, req *models.CreateReviewRequest) (*models.ReviewResponse, error) {
 	// validate request
-	if err := validateCreateReqest(req); err != nil {
+	if err := validateCreateRequest(req); err != nil {
 		return nil, err
 	}
 
@@ -94,4 +94,62 @@ func (s *ReviewService) GetReview(ctx context.Context, reviewID string, userID p
 	}
 
 	return models.ToReviewResponse(review), nil
+}
+
+// get all reviews
+func (s *ReviewService) GetAllReviews(ctx context.Context, userID primitive.ObjectID, page, limit int) (*models.ReviewListResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+
+	reviews, total, err := s.repo.FindAllByUser(ctx, userID, page, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch reviews: %w", err)
+	}
+
+	// convert to summary list
+	summaries := make([]models.ReviewSummary, len(reviews))
+	for i, r := range reviews {
+		summaries[i] = *models.ToReviewSummary(&r)
+	}
+
+	return &models.ReviewListResponse{
+		Reviews: summaries,
+		Total:   total,
+		Page:    page,
+		Limit:   limit,
+	}, nil
+}
+
+func (s *ReviewService) DeleteReview(ctx context.Context, reviewID string, userID primitive.ObjectID) error {
+	id, err := primitive.ObjectIDFromHex(reviewID)
+	if err != nil {
+		return errors.New("Invalid review id")
+	}
+
+	return s.repo.Delete(ctx, id, userID)
+}
+
+// private helpers
+func validateCreateRequest(req *models.CreateReviewRequest) error {
+	if req.Title == "" {
+		return errors.New("title is required")
+	}
+	if len(req.Title) > 100 {
+		return errors.New("title must be under 100 characters")
+	}
+	if req.Code == "" {
+		return errors.New("code is required")
+	}
+	if len(req.Code) > 50000 {
+		return errors.New("code exceeds maximum length of 50,000 characters")
+	}
+	if req.Language == "" {
+		req.Language = models.LangUnknown
+	}
+	return nil
 }

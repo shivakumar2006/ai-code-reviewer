@@ -100,10 +100,10 @@ type ReviewResponse struct {
 
 // list response for pagination response
 type ReviewListResponse struct {
-	Reviews []ReviewResponse `json:"review"`
-	Total   int64            `json:"total"`
-	Page    int              `json:"page"`
-	Limit   int              `json:"limit"`
+	Reviews []ReviewSummary `json:"reviews"`
+	Total   int64           `json:"total"`
+	Page    int             `json:"page"`
+	Limit   int             `json:"limit"`
 }
 
 // llm request / response
