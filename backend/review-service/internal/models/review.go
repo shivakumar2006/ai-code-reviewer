@@ -28,10 +28,10 @@ const (
 )
 
 const (
-	SeverityBug       Severity = "bug"
-	SeverityWarning   Severity = "warning"
-	SeverityInfo      Severity = "info"
-	SeveritySsecurity Severity = "security"
+	SeverityBug      Severity = "bug"
+	SeverityWarning  Severity = "warning"
+	SeverityInfo     Severity = "info"
+	SeveritySecurity Severity = "security"
 )
 
 // core models

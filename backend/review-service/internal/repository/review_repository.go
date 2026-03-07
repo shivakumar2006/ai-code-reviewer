@@ -33,7 +33,7 @@ func (r *ReviewRepository) Create(ctx context.Context, review *models.Review) er
 	return err
 }
 
-func (r *ReviewRepository) UpdateReview(ctx context.Context, id primitive.ObjectID, llmResp *models.LLMReviewResponse, status *models.ReviewStatus) error {
+func (r *ReviewRepository) UpdateReview(ctx context.Context, id primitive.ObjectID, llmResp *models.LLMReviewResponse, status models.ReviewStatus) error {
 	filter := bson.M{
 		"_id": id,
 	}
