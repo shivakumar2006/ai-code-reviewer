@@ -1,4 +1,4 @@
-from abc import ABC, abtractmethod 
+from abc import ABC, abstractmethod 
 from models import ReviewRequest, ReviewResponse, OllamaModelsResponse
 
 class BaseLLMProvider(ABC):
@@ -28,7 +28,7 @@ class BaseLLMProvider(ABC):
             code=code
         )
 
-    def parse_llm_response(self, raw: self) -> ReviewResponse: 
+    def parse_llm_response(self, raw: str) -> ReviewResponse: 
         import json 
         import re 
         from models import Issue, Severity

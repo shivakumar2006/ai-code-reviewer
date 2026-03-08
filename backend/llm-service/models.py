@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional 
 from enum import Enum
 
-class language(str, Enum):
+class Language(str, Enum):
     GO = "go"
     PYTHON = "python"
     JAVASCRIPT = "javascript"
@@ -47,7 +47,7 @@ class LLMConfig(BaseModel):
     ollama_model: Optional[str] = None
 
 # github config 
-class GithubConfig(BaseModel): 
+class GitHubConfig(BaseModel): 
     token: str 
     repo: str 
     branch: str = "main"

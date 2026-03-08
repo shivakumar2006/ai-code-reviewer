@@ -12,8 +12,8 @@ from models import (
     GitHubConfig,
     LLMProvider,
 )
-from reviewer import reviewer
-from config import config
+from reviewer import Reviewer
+from config import Config
 
 
 # ─────────────────────────────────────────
@@ -24,7 +24,7 @@ from config import config
 async def lifespan(app: FastAPI):
     # startup
     print("🚀 llm-service starting...")
-    print(f"📡 running on port {config.PORT}")
+    print(f"📡 running on port {Config.PORT}")
     print(f"🤖 supported providers: anthropic, openai, groq, gemini, ollama")
     yield
     # shutdown
@@ -49,7 +49,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.ALLOWED_ORIGINS,
+    allow_origins=Config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -251,6 +251,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=config.PORT,
+        port=Config.PORT,
         reload=True,
     )

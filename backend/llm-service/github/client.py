@@ -1,11 +1,11 @@
 import httpx
 import base64 
-from models import GithubConfig
+from models import GitHubConfig
 
-class GithubClient:
+class GitHubClient:
     BASE_URL = "https://api.github.com"
 
-    def __init__(self, config: GithubConfig): 
+    def __init__(self, config: GitHubConfig): 
         self.config = config
         self.client = httpx.AsyncClient(
             base_url=self.BASE_URL,
