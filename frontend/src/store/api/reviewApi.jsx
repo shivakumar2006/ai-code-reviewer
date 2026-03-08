@@ -42,7 +42,7 @@ export const ReviewApi = createApi({
             providesTags: (result, err, id) => [{ type: "Review", id }]
         }),
 
-        deleteReviews: builder.mutation({
+        deleteReview: builder.mutation({
             query: (id) => ({
                 url: `/reviews/${id}`,
                 method: "DELETE",
@@ -52,4 +52,4 @@ export const ReviewApi = createApi({
     }),
 });
 
-export const { useCreateReviewMutation, useGetAllReviewsQuery, useGetReviewQuery, useDeleteReviewsMutation } = ReviewApi;
+export const { useCreateReviewMutation, useGetAllReviewsQuery, useGetReviewQuery, useDeleteReviewMutation } = ReviewApi;

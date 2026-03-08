@@ -670,7 +670,7 @@ export function RegisterPage() {
                 password: form.password,
             }).unwrap();
             setStep(2);
-            setTimeout(() => navigate("/dashboard"), 2000);
+            setTimeout(() => navigate("/login"), 2000);
         } catch (err) {
             setServerError(err?.data?.error || "Registration failed. Please try again.");
         }
