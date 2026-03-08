@@ -36,8 +36,8 @@ func getEnv(key, fallback string) string {
 
 func mustEnv(key string) string {
 	value := os.Getenv(key)
-	if value != "" {
-		log.Fatalf("missing required new variable : %s", key)
+	if value == "" {
+		log.Fatalf("missing required env variable: %s", key)
 	}
 	return value
 }
