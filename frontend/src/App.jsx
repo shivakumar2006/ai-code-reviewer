@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import DashboardPage from './pages/Dashboard';
 import SettingsPage from './pages/Settings';
+import NewReviewPage from './pages/ReviewPage';
 
 const App = () => {
     return (
@@ -15,6 +16,7 @@ const App = () => {
                 <Route path='/register' element={<RegisterPage />} />
                 <Route path='/dashboard' element={<DashboardPage />} />
                 <Route path='/settings' element={<SettingsPage />} />
+                <Route path="/review/new" element={<NewReviewPage />} />
             </Routes>
         </>
     )
