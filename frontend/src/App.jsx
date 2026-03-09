@@ -6,6 +6,7 @@ import { LoginPage, RegisterPage } from './pages/AuthPages';
 import DashboardPage from './pages/Dashboard';
 import SettingsPage from './pages/Settings';
 import NewReviewPage from './pages/ReviewPage';
+import Profile from './pages/Profile';
 
 const App = () => {
     return (
@@ -17,6 +18,7 @@ const App = () => {
                 <Route path='/dashboard' element={<DashboardPage />} />
                 <Route path='/settings' element={<SettingsPage />} />
                 <Route path="/review/new" element={<NewReviewPage />} />
+                <Route path='/profile' element={<Profile />} />
             </Routes>
         </>
     )

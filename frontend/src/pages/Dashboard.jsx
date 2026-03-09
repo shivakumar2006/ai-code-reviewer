@@ -405,7 +405,7 @@ export default function DashboardPage() {
                 <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
                     <span className="nav-link active">Dashboard</span>
                     <span className="nav-link" onClick={() => navigate("/settings")}>Settings</span>
-                    <span className="nav-link" onClick={() => navigate("/")}>Profile</span>
+                    <span className="nav-link" onClick={() => navigate("/profile")}>Profile</span>
                 </div>
 
                 {/* right */}
