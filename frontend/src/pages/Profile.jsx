@@ -1267,6 +1267,20 @@ export default function UserProfilePage() {
                                             }}
                                         >PERMANENTLY DELETE</button>
                                     </div>
+                                    <button
+                                        disabled={deleteInput !== "DELETE"}
+                                        style={{
+                                            background: deleteInput === "DELETE" ? "#ff3b3b" : "#1a0808",
+                                            border: "none",
+                                            color: deleteInput === "DELETE" ? "#fff" : "#3a1010",
+                                            padding: "11px 22px",
+                                            cursor: deleteInput === "DELETE" ? "pointer" : "not-allowed",
+                                            fontFamily: "'DM Mono', monospace", fontSize: "10px",
+                                            letterSpacing: "0.15em", fontWeight: 500,
+                                            transition: "all 0.2s",
+                                            clipPath: "polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%)",
+                                        }}
+                                    >PERMANENTLY DELETE</button>
                                 </div>
                             )}
                         </div>
