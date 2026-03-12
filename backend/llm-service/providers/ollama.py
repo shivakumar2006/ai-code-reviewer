@@ -1,7 +1,9 @@
 import httpx
 from models import ReviewRequest, ReviewResponse, OllamaModelsResponse, OllamaModelInfo
 from providers.base import BaseLLMProvider
-from config import config
+from config import Config
+
+config = Config()
 
 
 class OllamaProvider(BaseLLMProvider):

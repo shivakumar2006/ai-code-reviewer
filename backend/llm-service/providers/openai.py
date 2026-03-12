@@ -1,7 +1,9 @@
 from openai import OpenAI, AuthenticationError, RateLimitError, BadRequestError
 from models import ReviewRequest, ReviewResponse, OllamaModelsResponse
 from providers.base import BaseLLMProvider
-from config import config 
+from config import Config 
+
+config = Config()
 
 class OpenAiProvider(BaseLLMProvider):
 

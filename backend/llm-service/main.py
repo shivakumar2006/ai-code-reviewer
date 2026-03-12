@@ -15,6 +15,8 @@ from models import (
 from reviewer import Reviewer
 from config import Config
 
+reviewer = Reviewer()
+
 
 # ─────────────────────────────────────────
 # LIFESPAN — startup + shutdown

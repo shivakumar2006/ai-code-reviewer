@@ -7,7 +7,7 @@ export const llmApi = createApi({
 
         prepareHeaders: (headers, { getState }) => {
             const token = getState().auth.accessToken;
-            if (token) {
+            if (token && token !== "undefined") {
                 headers.set("Authorization", `Bearer ${token}`)
             }
             return headers;
