@@ -69,7 +69,7 @@ class BaseLLMProvider(ABC):
             )
 
     def _get_model(self, requested: str | None, provider: str) -> str: 
-        from config import config 
+        from config import Config 
         if requested: 
             return requested
-        return config.DEFAULT_MODELS.get(provider, "")
+        return Config.DEFAULT_MODELS.get(provider, "")
