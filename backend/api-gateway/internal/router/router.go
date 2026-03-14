@@ -111,6 +111,7 @@ func Setup(cfg *config.Config, sp *proxy.ServiceProxy) http.Handler {
 		}))
 
 		r.Post("/review", sp.LLMProxy)
+		r.Post("/test", sp.LLMProxy)
 	})
 
 	return r

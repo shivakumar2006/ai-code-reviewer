@@ -5,6 +5,14 @@ export const llmApi = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: "http://localhost:8000",
 
+        // prepareHeaders: (headers) => {
+        //     headers.set(
+        //         "Authorization",
+        //         "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNjliMDRkZjRjY2IwNTA0N2RmNTQ1MzQ2IiwiZW1haWwiOiJoYWhhQGdtYWlsLmNvbSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJpc3MiOiJhaV9jb2RlX3Jldmlld2VyIiwiZXhwIjoxNzczNDczNTY2LCJpYXQiOjE3NzM0NzI2NjZ9.CA6rbqBUvdoBHGoVcrmfVipuxBNK3ZXeWSSM4W39_Co"
+        //     );
+        //     return headers;
+        // }
+
         prepareHeaders: (headers, { getState }) => {
             const token = getState().auth.accessToken;
             if (token && token !== "undefined") {
