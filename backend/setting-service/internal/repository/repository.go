@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"setting-service/internal/models"
 	"time"
 
@@ -38,4 +39,25 @@ func NewProviderRepository(db *mongo.Database) ProviderRepository {
 	_, _ = col.Indexes().CreateOne(ctx, idxModel)
 
 	return &mongoProviderRepo{col: col}
+}
+
+// lllm provider methods
+// add or update single provider entry in the database
+// uses $set so other providers in the map are untouched
+func (r *mongoProviderRepo) UpsertProvider(ctx context.Context, userID, provider string, cfg models.ProviderConfig) error {
+	filter := bson.D{{Key: "user_id", Value: userID}}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: fmt.Sprintf("providers.%s", provider), Value: cfg},
+			{Key: "updated_at", Value: time.Now().UTC()},
+		}},
+		{Key: "$setOnInsert", Value: bson.D{
+			{Key: "user_id", Value: userID},
+		}},
+	}
+	opts := options.Update().SetUpsert(true)
+	if _, err := r.col.UpdateOne(ctx, filter, update, opts); err != nil {
+		return fmt.Errorf("upsert provider: %w", err)
+	}
+	return nil
 }
