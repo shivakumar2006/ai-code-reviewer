@@ -6,6 +6,7 @@ import "time"
 type UserProviderSettings struct {
 	UserID    string                    `bson:"user_id" json:"user_id"`
 	Providers map[string]ProviderConfig `bson:"providers" json:"providers"`
+	Github    *GithubConfig             `bson:"github,omitempty" json:"github,omitempty"`
 	UpdatedAt time.Time                 `bson:"updated_at" json:"updated_at"`
 }
 
@@ -98,4 +99,8 @@ var (
 	ErrProviderRequired = &AppError{Code: 400, Message: "Provider is required"}
 	ErrApiKeyRequired   = &AppError{Code: 400, Message: "appi_key is required"}
 	ErrTokenRequired    = &AppError{Code: 400, Message: "github token is required"}
+	ErrGitHubNotFound   = &AppError{Code: 404, Message: "github settings not found"}
+	ErrUnauthorized     = &AppError{Code: 401, Message: "unauthorized"}
+	ErrInternal         = &AppError{Code: 500, Message: "internal server error"}
+	ErrProviderNotFound = &AppError{Code: 404, Message: "provider not found"}
 )
