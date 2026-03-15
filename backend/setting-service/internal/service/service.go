@@ -26,7 +26,7 @@ type providerService struct {
 	cipher *crypto.Cipher
 }
 
-func NewProviderService(repo repository.ProviderRepository, cipher *crypto.Cipher) providerService {
+func NewProviderService(repo repository.ProviderRepository, cipher *crypto.Cipher) *providerService {
 	return &providerService{
 		repo:   repo,
 		cipher: cipher,
@@ -60,7 +60,7 @@ func (s *providerService) SaveProvider(ctx context.Context, userID string, req *
 
 // get settings maks all providers + github config with masked secrets
 func (s *providerService) GetSettings(ctx context.Context, userID string) (*models.GetSettingsResponse, error) {
-	doc, err := s.repo.GetGithub(ctx, userID)
+	doc, err := s.repo.GetSettings(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get settings: %w", err)
 	}
@@ -74,5 +74,113 @@ func (s *providerService) GetSettings(ctx context.Context, userID string) (*mode
 	}
 
 	// mask all provider keys
+	for name, cfg := range doc.Providers {
+		plainKey, decErr := s.cipher.Decrypt(cfg.APIKeyEncrypted)
+		if decErr != nil {
+			plainKey = "****error****"
+		}
 
+		resp.Providers[name] = models.ProviderDTO{
+			APIKey: maskKey(plainKey),
+			Model:  cfg.Model,
+		}
+	}
+
+	// mask github token if present
+	if doc.Github != nil {
+		plainText, decErr := s.cipher.Decrypt(doc.Github.TokenEncrypted)
+		if decErr != nil {
+			plainText = "****error****"
+		}
+		resp.Github = models.GithubDTO{
+			Token:  maskKey(plainText),
+			Repo:   doc.Github.Repo,
+			Branch: doc.Github.Branch,
+		}
+	}
+	return resp, nil
+}
+
+func maskKey(key string) string {
+	if len(key) <= 10 {
+		return "****"
+	}
+	return key[:6] + "****" + key[len(key)-4:]
+}
+
+// delete provider from the users settings
+func (s *providerService) DeleteProvider(ctx context.Context, userID string, req *models.SaveGithubRequest) error {
+	if err := req.Validate(); err != nil {
+		return err
+	}
+
+	branch := req.Branch
+	if branch == "" {
+		branch = "main"
+	}
+
+	encrypted, err := s.cipher.Encrypt(req.Token)
+	if err != nil {
+		return fmt.Errorf("encrypt github token: %w", err)
+	}
+
+	cfg := models.GithubConfig{
+		TokenEncrypted: encrypted,
+		Repo:           req.Repo,
+		Branch:         req.Branch,
+		CreatedAt:      time.Now().UTC(),
+	}
+
+	if err := s.repo.UpsertGithub(ctx, userID, cfg); err != nil {
+		return fmt.Errorf("save github : %w", err)
+	}
+	return nil
+}
+
+// delete github remove github settings for a user
+func (s *providerService) DeleteGithub(ctx context.Context, userID string) error {
+	return s.repo.DeleteGithub(ctx, userID)
+}
+
+// internal: used by llm and review service
+// this is called internally by llm-service to perform the actual llm request
+func (s *providerService) GetDecryptProviderKey(ctx context.Context, userID, provider string) (string, string, error) {
+	doc, err := s.repo.GetSettings(ctx, userID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if doc == nil {
+		return "", "", models.ErrProviderNotFound
+	}
+
+	cfg, ok := doc.Providers[provider]
+	if !ok {
+		return "", "", models.ErrProviderNotFound
+	}
+
+	plainKey, err := s.cipher.Decrypt(cfg.APIKeyEncrypted)
+	if err != nil {
+		return "", "", fmt.Errorf("decrypt api key: %w", err)
+	}
+	return plainKey, cfg.Model, nil
+}
+
+// this function returns the plaintext github token + repo + branch
+func (s *providerService) GetDecryptGithubToken(ctx context.Context, userID string) (string, string, string, error) {
+	doc, err := s.GetSettings(ctx, userID)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	if doc == nil || doc.Github == nil {
+		return "", "", "", models.ErrGitHubNotFound
+	}
+
+	plainText, err := s.cipher.Decrypt(doc.Github.TokenEncrypted)
+	if err != nil {
+		return "", "", "", fmt.Errorf("decrypt github token : %w", err)
+	}
+
+	return plainText, doc.Github.Repo, doc.Github.Branch, nil
 }
