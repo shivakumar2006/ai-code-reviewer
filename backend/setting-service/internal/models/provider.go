@@ -81,7 +81,7 @@ type GetProviderResponse struct {
 // get setting response - all at once
 type GetSettingsResponse struct {
 	Providers map[string]ProviderDTO `json:"providers"`
-	Github    GithubDTO              `json:"github,omitempty"`
+	Github    *GithubDTO             `json:"github,omitempty"`
 }
 
 // sentinel errors

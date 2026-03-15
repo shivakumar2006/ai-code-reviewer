@@ -92,7 +92,7 @@ func (s *providerService) GetSettings(ctx context.Context, userID string) (*mode
 		if decErr != nil {
 			plainText = "****error****"
 		}
-		resp.Github = models.GithubDTO{
+		resp.Github = &models.GithubDTO{
 			Token:  maskKey(plainText),
 			Repo:   doc.Github.Repo,
 			Branch: doc.Github.Branch,
@@ -168,7 +168,7 @@ func (s *providerService) GetDecryptProviderKey(ctx context.Context, userID, pro
 
 // this function returns the plaintext github token + repo + branch
 func (s *providerService) GetDecryptGithubToken(ctx context.Context, userID string) (string, string, string, error) {
-	doc, err := s.GetSettings(ctx, userID)
+	doc, err := s.repo.GetSettings(ctx, userID)
 	if err != nil {
 		return "", "", "", err
 	}
