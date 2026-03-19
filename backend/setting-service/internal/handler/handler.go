@@ -18,10 +18,9 @@ func NewProviderHandler(svc service.ProviderService) *ProviderHandler {
 
 // rregister router wires public (jwt protected) routes onto the router
 func (h *ProviderHandler) RegisterRoutes(r chi.Router) {
-	r.Post("/users/providers", h.svc.SaveProvider)
-	r.Get("/users/providers", h.svc.GetSettings)
-	r.Delete("/users/providers", h.svc.DeleteProvider)
-	r.Post("/users/github", h.svc.SaveGithub)
-	r.Delete("/users/github", h.svc.DeleteGithub)
-
+	r.Post("/users/providers", h.SaveProvider)
+	r.Get("/users/providers", h.GetSettings)
+	r.Delete("/users/providers", h.DeleteProvider)
+	r.Post("/users/github", h.SaveGithub)
+	r.Delete("/users/github", h.DeleteGithub)
 }
