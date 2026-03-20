@@ -23,4 +23,8 @@ func (h *ProviderHandler) RegisterRoutes(r chi.Router) {
 	r.Delete("/users/providers", h.DeleteProvider)
 	r.Post("/users/github", h.SaveGithub)
 	r.Delete("/users/github", h.DeleteGithub)
+	r.Post("/users/gitlab", h.SaveGitlab)
+	r.Delete("/users/gitlab", h.DeleteGitlab)
+	r.Post("/users/bitbucket", h.SaveBitbucket)
+	r.Delete("/users/bitbucket", h.DeleteBitbucket)
 }
