@@ -1,9 +1,0 @@
-@import "tailwindcss";
-
-.dropdown-menu {
-    @apply absolute hidden group-hover:block bg-white text-black mt-2 rounded shadow-lg w-60 z-50;
-}
-
-.dropdown-item {
-    @apply px-4 py-2 hover:bg-blue-100 cursor-pointer transition;
-}
