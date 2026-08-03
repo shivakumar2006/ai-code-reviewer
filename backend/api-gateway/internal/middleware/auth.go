@@ -32,7 +32,6 @@ type Claims struct {
 	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
-
 func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get authorization header
